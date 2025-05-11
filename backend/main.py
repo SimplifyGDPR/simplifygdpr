@@ -34,4 +34,19 @@ def custom_openapi():
             "type": "oauth2",
             "flows": {
                 "password": {
-                    "tokenUrl": "/auth/login",  # 👈 Asegúrate de que tu ruta de login sea
+                    "tokenUrl": "/auth/login"
+                }
+            }
+        }
+    }
+
+    openapi_schema["security"] = [
+        {
+            "OAuth2PasswordBearer": []
+        }
+    ]
+
+    app.openapi_schema = openapi_schema
+    return app.openapi_schema
+
+app.openapi = custom_openapi
