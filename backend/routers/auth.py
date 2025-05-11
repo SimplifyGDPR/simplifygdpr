@@ -5,6 +5,7 @@ from backend import models
 from passlib.context import CryptContext
 from jose import jwt, JWTError
 from datetime import datetime, timedelta
+from pydantic import BaseModel
 
 router = APIRouter(
     prefix="/auth",
@@ -37,22 +38,27 @@ def create_access_token(data: dict, expires_delta: timedelta = None):
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
+# 🔹 Pydantic models
+class UserInput(BaseModel):
+    email: str
+    password: str
+
 @router.post("/signup")
-def signup(email: str, password: str, db: Session = Depends(get_db)):
-    existing_user = db.query(models.UsuarioSistema).filter(models.UsuarioSistema.email == email).first()
+def signup(user: UserInput, db: Session = Depends(get_db)):
+    existing_user = db.query(models.UsuarioSistema).filter(models.UsuarioSistema.email == user.email).first()
     if existing_user:
         raise HTTPException(status_code=400, detail="El usuario ya existe")
-    hashed_pw = get_password_hash(password)
-    user = models.UsuarioSistema(email=email, hashed_password=hashed_pw)
-    db.add(user)
+    hashed_pw = get_password_hash(user.password)
+    new_user = models.UsuarioSistema(email=user.email, hashed_password=hashed_pw)
+    db.add(new_user)
     db.commit()
-    db.refresh(user)
+    db.refresh(new_user)
     return {"mensaje": "Usuario creado correctamente"}
 
 @router.post("/login")
-def login(email: str, password: str, db: Session = Depends(get_db)):
-    user = db.query(models.UsuarioSistema).filter(models.UsuarioSistema.email == email).first()
-    if not user or not verify_password(password, user.hashed_password):
+def login(user: UserInput, db: Session = Depends(get_db)):
+    db_user = db.query(models.UsuarioSistema).filter(models.UsuarioSistema.email == user.email).first()
+    if not db_user or not verify_password(user.password, db_user.hashed_password):
         raise HTTPException(status_code=401, detail="Credenciales incorrectas")
-    access_token = create_access_token(data={"sub": user.email})
+    access_token = create_access_token(data={"sub": db_user.email})
     return {"access_token": access_token, "token_type": "bearer"}
