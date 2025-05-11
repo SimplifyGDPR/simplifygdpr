@@ -1,18 +1,18 @@
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from backend.database import SessionLocal
 from backend import models
 from passlib.context import CryptContext
-from jose import jwt, JWTError
+from jose import jwt
 from datetime import datetime, timedelta
-from pydantic import BaseModel
 
 router = APIRouter(
     prefix="/auth",
     tags=["Autenticación"]
 )
 
-# Seguridad
+# 🔐 Seguridad
 SECRET_KEY = "clave-secreta-simplifygdpr"
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
@@ -38,7 +38,8 @@ def create_access_token(data: dict, expires_delta: timedelta = None):
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
-# 🔹 Pydantic models
+# 🔐 Ruta para registrarse
+from pydantic import BaseModel
 class UserInput(BaseModel):
     email: str
     password: str
@@ -55,10 +56,11 @@ def signup(user: UserInput, db: Session = Depends(get_db)):
     db.refresh(new_user)
     return {"mensaje": "Usuario creado correctamente"}
 
+# ✅ Login con formulario tipo OAuth2 (compatible Swagger UI)
 @router.post("/login")
-def login(user: UserInput, db: Session = Depends(get_db)):
-    db_user = db.query(models.UsuarioSistema).filter(models.UsuarioSistema.email == user.email).first()
-    if not db_user or not verify_password(user.password, db_user.hashed_password):
+def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+    db_user = db.query(models.UsuarioSistema).filter(models.UsuarioSistema.email == form_data.username).first()
+    if not db_user or not verify_password(form_data.password, db_user.hashed_password):
         raise HTTPException(status_code=401, detail="Credenciales incorrectas")
     access_token = create_access_token(data={"sub": db_user.email})
     return {"access_token": access_token, "token_type": "bearer"}
