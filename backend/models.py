@@ -32,6 +32,13 @@ class UsuarioAutorizado(Base):
 
 class Politica(Base):
     __tablename__ = "politicas"
+
+    class UsuarioSistema(Base):
+    __tablename__ = "usuarios_sistema"
+    id = Column(Integer, primary_key=True, index=True)
+    email = Column(String, unique=True, index=True, nullable=False)
+    hashed_password = Column(String, nullable=False)
+
     id = Column(Integer, primary_key=True, index=True)
     titulo = Column(String, nullable=False)
     tipo = Column(String, nullable=False)  # Ej: Aviso Legal, Cookies...
