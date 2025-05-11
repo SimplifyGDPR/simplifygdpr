@@ -29,3 +29,11 @@ class UsuarioAutorizado(Base):
     cargo = Column(String)
     ubicacion = Column(String)
     fecha_baja = Column(Date, nullable=True)
+
+class Politica(Base):
+    __tablename__ = "politicas"
+    id = Column(Integer, primary_key=True, index=True)
+    titulo = Column(String, nullable=False)
+    tipo = Column(String, nullable=False)  # Ej: Aviso Legal, Cookies...
+    contenido = Column(String, nullable=False)
+
